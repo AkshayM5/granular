@@ -1,21 +1,44 @@
+import json
 import pathlib
 
 
-DONE = 'DONE'
+META = 'meta.json'
 
 
 def commit(directory):
     if isinstance(directory, str):
         directory = pathlib.Path(directory)
-    filename = directory / DONE
-    if not filename.exists():
-        filename.write_bytes(b'')
+    meta = readmeta(directory)
+    assert meta, directory
+    meta['done'] = True
+    (directory / META).write_bytes(json.dumps(meta).encode('utf-8'))
 
 
 def committed(directory):
     if isinstance(directory, str):
         directory = pathlib.Path(directory)
-    return any((d / DONE).exists() for d in (directory, directory.parent))
+    metas = [readmeta(d) for d in (directory, directory.parent)]
+    return any(meta and meta['done'] for meta in metas)
+
+
+def readmeta(directory):
+    filename = directory / META
+    if filename.exists():
+        return json.loads(filename.read_bytes())
+    legacy = directory / 'spec.json'
+    if legacy.exists():
+        return {'spec': json.loads(legacy.read_bytes()), 'done': False}
+    return None
+
+
+def writemeta(directory, spec):
+    meta = readmeta(directory)
+    if meta:
+        assert spec == meta['spec'], (spec, meta['spec'])
+        return
+    directory.mkdir(exist_ok=True, parents=True)
+    meta = {'spec': spec, 'done': False}
+    (directory / META).write_bytes(json.dumps(meta).encode('utf-8'))
 
 
 def check_writable(directory):

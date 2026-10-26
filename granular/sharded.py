@@ -26,10 +26,7 @@ class ShardedDatasetWriter(utils.Closing):
         if isinstance(directory, str):
             directory = pathlib.Path(directory)
         utils.check_writable(directory)
-        try:
-            directory.mkdir()
-        except FileExistsError:
-            pass
+        utils.writemeta(directory, dict(sorted(spec.items())))
         self.directory = directory
         self.thespec = spec
         self.encoders = encoders
@@ -98,7 +95,7 @@ class ShardedDatasetReader(utils.Closing):
         if isinstance(directory, str):
             directory = pathlib.Path(directory)
         folders = sorted(
-            x for x in directory.glob('*') if x.name != utils.DONE
+            x for x in directory.glob('*') if x.name != utils.META
         )
         assert all(int(x.name) == i for i, x in enumerate(folders)), folders
         range_ = range(shardstart, len(folders), shardstep)
