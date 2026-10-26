@@ -25,7 +25,6 @@ class ShardedDatasetWriter(utils.Closing):
             assert shardlen, shardlen
         if isinstance(directory, str):
             directory = pathlib.Path(directory)
-        utils.check_writable(directory)
         utils.writemeta(directory, dict(sorted(spec.items())))
         self.directory = directory
         self.thespec = spec

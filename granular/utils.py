@@ -14,6 +14,21 @@ def commit(directory):
     (directory / META).write_bytes(json.dumps(meta).encode('utf-8'))
 
 
+def writemeta(directory, spec):
+    if committed(directory):
+        raise PermissionError(
+            f'Cannot write to {directory}: dataset is committed. '
+            'Write a new version instead.'
+        )
+    meta = readmeta(directory)
+    if meta:
+        assert spec == meta['spec'], (spec, meta['spec'])
+        return
+    directory.mkdir(exist_ok=True, parents=True)
+    meta = {'spec': spec, 'done': False}
+    (directory / META).write_bytes(json.dumps(meta).encode('utf-8'))
+
+
 def committed(directory):
     if isinstance(directory, str):
         directory = pathlib.Path(directory)
@@ -29,24 +44,6 @@ def readmeta(directory):
     if legacy.exists():
         return {'spec': json.loads(legacy.read_bytes()), 'done': False}
     return None
-
-
-def writemeta(directory, spec):
-    meta = readmeta(directory)
-    if meta:
-        assert spec == meta['spec'], (spec, meta['spec'])
-        return
-    directory.mkdir(exist_ok=True, parents=True)
-    meta = {'spec': spec, 'done': False}
-    (directory / META).write_bytes(json.dumps(meta).encode('utf-8'))
-
-
-def check_writable(directory):
-    if committed(directory):
-        raise PermissionError(
-            f'Cannot write to {directory}: dataset is committed. '
-            'Write a new version instead.'
-        )
 
 
 class Closing:
